@@ -49,14 +49,10 @@ class AirportController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['webhook' => 'Could not reach registration webhook.']);
         }
-        
-        if ($response->failed()) {
-            return back()->withErrors(['webhook' => 'Webhook returned an error.']);
-        }
 
         $data = $response->json();
 
-        return redirect()->route('dashboard')->toast('Airport registration initiated successfully.', 'success');
+        return redirect()->route('dashboard');
     }
 
     /**

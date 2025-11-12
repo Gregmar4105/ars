@@ -10,6 +10,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
+import { usePage } from '@inertiajs/react';
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "motion/react";
@@ -43,7 +44,7 @@ function useDebounce<T>(value: T, delay = 300): T {
     return debouncedValue;
 }
 
-interface Action {
+export interface IAction {
     id: string;
     label: string;
     icon: React.ReactNode;
@@ -53,7 +54,7 @@ interface Action {
 }
 
 interface SearchResult {
-    actions: Action[];
+    actions: IAction[];
 }
 
 const ANIMATION_VARIANTS = {
@@ -100,46 +101,14 @@ const allActionsSample = [
         short: "⌘K",
         end: "Agent",
     },
-    {
-        id: "2",
-        label: "Summarize",
-        icon: <BarChart2 className="h-4 w-4 text-orange-500" />,
-        description: "gpt-5",
-        short: "⌘cmd+p",
-        end: "Command",
-    },
-    {
-        id: "3",
-        label: "Screen Studio",
-        icon: <Video className="h-4 w-4 text-purple-500" />,
-        description: "Claude 4.1",
-        short: "",
-        end: "Application",
-    },
-    {
-        id: "4",
-        label: "Talk to Jarvis",
-        icon: <AudioLines className="h-4 w-4 text-green-500" />,
-        description: "gpt-5 voice",
-        short: "",
-        end: "Active",
-    },
-    {
-        id: "5",
-        label: "Kokonut UI - Pro",
-        icon: <LayoutGrid className="h-4 w-4 text-blue-500" />,
-        description: "Components",
-        short: "",
-        end: "Link",
-    },
 ];
 
-function ActionSearchBar({
+function ActionSearchBarAirport({
     actions = allActionsSample,
     defaultOpen = false,
     className,
 }: {
-    actions?: Action[];
+    actions?: IAction[];
     defaultOpen?: boolean;
     className?: string;
 }) {
@@ -147,7 +116,7 @@ function ActionSearchBar({
     const [result, setResult] = useState<SearchResult | null>(null);
     const [isFocused, setIsFocused] = useState(defaultOpen);
     const [isTyping, setIsTyping] = useState(false);
-    const [selectedAction, setSelectedAction] = useState<Action | null>(null);
+    const [selectedAction, setSelectedAction] = useState<IAction | null>(null);
     const [activeIndex, setActiveIndex] = useState(-1);
     const debouncedQuery = useDebounce(query, 200);
 
@@ -214,7 +183,7 @@ function ActionSearchBar({
         [result?.actions, activeIndex]
     );
 
-    const handleActionClick = useCallback((action: Action) => {
+    const handleActionClick = useCallback((action: IAction) => {
         setSelectedAction(action);
     }, []);
 
@@ -233,7 +202,7 @@ function ActionSearchBar({
 
     return (
     // Outer container: Removed max-w-xl to allow the inner container to expand.
-    <div className="w-full mx-auto">
+    <div className="w-xl mr-4">
         {/* New relative container for the search input and dropdown */}
         {/* *** MODIFIED CLASSNAME HERE ***
             Changed 'max-w-sm mx-auto' to 'max-w-full'. 
@@ -376,4 +345,4 @@ function ActionSearchBar({
 );
 }
 
-export default ActionSearchBar;
+export default ActionSearchBarAirport;
