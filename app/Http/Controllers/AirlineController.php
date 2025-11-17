@@ -3,15 +3,34 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use App\Models\Airline;
 
 class AirlineController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        
+        $search = $request->query('search');
+
+        $airlines = Airline::when($search, function ($query) use ($search) {
+                $query->where('airline_name', 'like', "%{$search}%")
+                    ->orWhere('airline_code', 'like', "%{$search}%")
+                    ->orWhere('callsign', 'like', "%{$search}%")
+                    ->orWhere('country', 'like', "%{$search}%");
+            })
+            ->paginate(10)
+            ->withQueryString(); // keep ?search= in pagination
+
+        return Inertia::render('Airline/Index', [
+            'airlines' => $airlines,
+            'filters' => [
+                'search' => $search,
+            ],
+        ]);
     }
 
     /**

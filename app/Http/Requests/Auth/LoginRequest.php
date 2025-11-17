@@ -52,6 +52,15 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // ✅ Check if the user's account is active
+        if ($user->user_status !== 'Active') {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => __('Your account is not active. Please contact the administrator.'),
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
 
         return $user;

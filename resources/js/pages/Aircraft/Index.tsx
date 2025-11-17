@@ -18,28 +18,31 @@ import { router, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { 
-        title: 'Airlines', 
-        href: '/airlines' 
+        title: 'Aircrafts', 
+        href: '/aircrafts' 
     },
 ];
 
-export default function Index({ airlines }: any) {
+export default function Index({ aircrafts }: any) {
     const { filters } = usePage().props;
     const [search, setSearch] = useState<string>(filters?.search || "");
 
     // ---- Local instant filtering (unchanged) ----
-    const filteredAirlines = useMemo(() => {
-        if (!airlines?.data) return [];
-        const q = search.toLowerCase();
-        return airlines.data.filter(({ airline_code, airline_name, callsign, country }: any) =>
-            airline_code.toLowerCase().includes(q) ||
-            airline_name.toLowerCase().includes(q) ||
-            callsign.toLowerCase().includes(q) ||
-            country.toLowerCase().includes(q)
-        );
-    }, [search, airlines]);
+    const filteredAircrafts = useMemo(() => {
+        if (!aircrafts?.data) return [];
 
-    const hasAirlines = filteredAirlines.length > 0;
+        const q = search.toLowerCase();
+
+        return aircrafts.data.filter(({ icao_code, model_name, manufacturer, capacity_pax, wake_turbulence_category }: any) =>
+            icao_code.toLowerCase().includes(q) ||
+            model_name.toLowerCase().includes(q) ||
+            manufacturer.toLowerCase().includes(q) ||
+            capacity_pax.toString().includes(q)||
+            wake_turbulence_category.toLowerCase().includes(q)
+        );
+    }, [search, aircrafts]);
+
+    const hasAircrafts = filteredAircrafts.length > 0;
 
     // ---- Debounce timer ref ----
     const debounceTimer = useRef<number | null>(null);
@@ -66,31 +69,31 @@ export default function Index({ airlines }: any) {
 
     debounceTimer.current = window.setTimeout(() => {
         if (!searchToastId.current) {
-            searchToastId.current = toast.loading("Searching airlines...");
+            searchToastId.current = toast.loading("Searching aircrafts...");
         } else {
-            toast.loading("Searching airlines...", { id: searchToastId.current });
+            toast.loading("Searching aircrafts...", { id: searchToastId.current });
         }
 
         router.get(
-            "/airlines",
+            "/aircrafts",
             { search: value },
             {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-                only: ["airlines"],
+                only: ["aircrafts"],
 
                 // onSuccess receives the page props as argument
                 onSuccess: (page) => {
                     setLoading(false);
 
-                    // Get updated airlines from the returned page props
-                    const updatedAirlines = (page.props.airlines as any)?.data || [];
+                    // Get updated aircrafts from the returned page props
+                    const updatedAircrafts = (page.props.aircrafts as any)?.data || [];
 
-                    if (updatedAirlines.length > 0) {
-                        toast.success("Airlines found!", { id: searchToastId.current || undefined });
+                    if (updatedAircrafts.length > 0) {
+                        toast.success("Aircrafts found!", { id: searchToastId.current || undefined });
                     } else {
-                        toast.error("No matching airlines found.", { id: searchToastId.current || undefined });
+                        toast.error("No matching aircrafts found.", { id: searchToastId.current || undefined });
                     }
 
                     searchToastId.current = null;
@@ -98,7 +101,7 @@ export default function Index({ airlines }: any) {
 
                 onError: () => {
                     setLoading(false);
-                    toast.error("Failed to load airlines.", { id: searchToastId.current || undefined });
+                    toast.error("Failed to load aircrafts.", { id: searchToastId.current || undefined });
                     searchToastId.current = null;
                 },
             }
@@ -124,7 +127,7 @@ export default function Index({ airlines }: any) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Airlines" />
+            <Head title="Aircrafts" />
 
             {/* Top Controls: Create + Search */}
             <div className="flex items-center relative">
@@ -132,7 +135,7 @@ export default function Index({ airlines }: any) {
                 <Search className="absolute left-166 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <Input
                     type="text"
-                    placeholder="Search airlines..."
+                    placeholder="Search aircrafts..."
                     value={search}
                     onChange={handleSearchChange}
                     className="border border-gray-400 w-full max-w-xl rounded-md px-3 py-1 mr-4 focus:outline-none focus:ring focus:ring-gray-300"
@@ -145,39 +148,41 @@ export default function Index({ airlines }: any) {
                     <TableCaption></TableCaption>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="text-base font-bold">Airline Code</TableHead>
-                            <TableHead className="text-base font-bold">Airline Name</TableHead>
-                            <TableHead className="text-base font-bold">Callsign</TableHead>
-                            <TableHead className="text-base font-bold">Country</TableHead>
+                            <TableHead className="text-base font-bold">ICAO Code</TableHead>
+                            <TableHead className="text-base font-bold">Aircraft Model</TableHead>
+                            <TableHead className="text-base font-bold">Manufacturer</TableHead>
+                            <TableHead className="text-base font-bold">Max Capacity</TableHead>
                             <TableHead className="text-base font-bold">Status</TableHead>
+                            <TableHead className="text-base font-bold">Turbulence Category</TableHead>
                             <TableHead className="text-base font-bold">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
 
                     <TableBody>
-                        {!hasAirlines && (
+                        {!hasAircrafts && (
                             <TableRow>
                                 <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
-                                    No airlines found.
+                                    No aircrafts found.
                                 </TableCell>
                             </TableRow>
                         )}
 
-                        {hasAirlines &&
-                            filteredAirlines.map(({ id, airline_code, airline_name, callsign, country, airline_status }: any) => (
+                        {hasAircrafts &&
+                            filteredAircrafts.map(({ id, icao_code, model_name, manufacturer, capacity_pax, aircraft_status, wake_turbulence_category }: any) => (
                                 <TableRow key={id}>
-                                    <TableCell className="font-bold">{airline_code}</TableCell>
-                                    <TableCell>{airline_name}</TableCell>
-                                    <TableCell>{callsign}</TableCell>
-                                    <TableCell>{country}</TableCell>
+                                    <TableCell className="font-bold">{icao_code}</TableCell>
+                                    <TableCell>{model_name}</TableCell>
+                                    <TableCell>{manufacturer}</TableCell>
+                                    <TableCell>{capacity_pax}</TableCell>
                                     <TableCell>
                                         <Badge
                                             variant="default"
-                                            className={airline_status === "Inactive" ? "bg-red-600 text-white" : "bg-green-500 text-white"}
+                                            className={aircraft_status === "Inactive" ? "bg-red-600 text-white" : "bg-green-500 text-white"}
                                         >
-                                            {airline_status}
+                                            {aircraft_status}
                                         </Badge>
                                     </TableCell>
+                                    <TableCell>{wake_turbulence_category}</TableCell>
                                     <TableCell className="flex items-center gap-2">
 
                                         {/* DIALOGS*/}
@@ -190,9 +195,9 @@ export default function Index({ airlines }: any) {
             </div>
                 <div className="flex items-center justify-between mt-2 mx-4">
                     <div className="flex items-center gap-2 text-md ">
-                        Showing total results: <p className="font-bold">{airlines.total}</p> airline/s.
+                        Showing total results: <p className="font-bold">{aircrafts.total}</p> aircraft/s.
                     </div>
-                    <Pagination links={airlines.links} />
+                    <Pagination links={aircrafts.links} />
                 </div>
         </AppLayout>
     );

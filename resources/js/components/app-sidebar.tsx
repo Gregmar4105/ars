@@ -43,8 +43,8 @@ const mainNavItems: NavItem[] = [
         icon:  TowerControl,
     },
     {
-        title: 'Airplanes',
-        href: '/airplanes',
+        title: 'Aircrafts',
+        href: '/aircrafts',
         icon:  Plane ,
     },
     {

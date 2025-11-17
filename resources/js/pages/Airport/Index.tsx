@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,6 +14,7 @@ import DeleteDialog from './Delete-Dialog';
 import ShowDialog from './Show-Dialog';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { router, usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { 
@@ -22,21 +23,105 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Index({ airports }) {
-    const [search, setSearch] = useState("");
+export default function Index({ airports }: any) {
+    const { filters } = usePage().props;
+    const [search, setSearch] = useState<string>(filters?.search || "");
 
-    // Filter airports based on search input
+    // ---- Local instant filtering (unchanged) ----
     const filteredAirports = useMemo(() => {
         if (!airports?.data) return [];
-        return airports.data.filter(({ iata_code, airport_name, city, country }) =>
-            iata_code.toLowerCase().includes(search.toLowerCase()) ||
-            airport_name.toLowerCase().includes(search.toLowerCase()) ||
-            city.toLowerCase().includes(search.toLowerCase()) ||
-            country.toLowerCase().includes(search.toLowerCase())
+        const q = search.toLowerCase();
+        return airports.data.filter(({ iata_code, airport_name, city, country, timezone }: any) =>
+            iata_code.toLowerCase().includes(q) ||
+            airport_name.toLowerCase().includes(q) ||
+            city.toLowerCase().includes(q) ||
+            country.toLowerCase().includes(q)||
+            timezone.toLowerCase().includes(q)
         );
     }, [search, airports]);
 
     const hasAirports = filteredAirports.length > 0;
+
+    // ---- Debounce timer ref ----
+    const debounceTimer = useRef<number | null>(null);
+
+    const [loading, setLoading] = useState(false);
+    const [showNoResults, setShowNoResults] = useState(false);
+    const searchToastId = useRef<string | number | null>(null);
+
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (debounceTimer.current) {
+                window.clearTimeout(debounceTimer.current);
+            }
+        };
+    }, []);
+
+    // ---- server search (debounced) ----
+    function scheduleServerSearch(value: string, delay = 300) {
+    if (debounceTimer.current) {
+        window.clearTimeout(debounceTimer.current);
+    }
+
+    debounceTimer.current = window.setTimeout(() => {
+        if (!searchToastId.current) {
+            searchToastId.current = toast.loading("Searching airports...");
+        } else {
+            toast.loading("Searching airports...", { id: searchToastId.current });
+        }
+
+        router.get(
+            "/airports",
+            { search: value },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: ["airports"],
+
+                // onSuccess receives the page props as argument
+                onSuccess: (page) => {
+                    setLoading(false);
+
+                    // Get updated airports from the returned page props
+                    const updatedAirports = (page.props.airports as any)?.data || [];
+
+                    if (updatedAirports.length > 0) {
+                        toast.success("Airports found!", { id: searchToastId.current || undefined });
+                    } else {
+                        toast.error("No matching airports found.", { id: searchToastId.current || undefined });
+                    }
+
+                    searchToastId.current = null;
+                },
+
+                onError: () => {
+                    setLoading(false);
+                    toast.error("Failed to load airports.", { id: searchToastId.current || undefined });
+                    searchToastId.current = null;
+                },
+            }
+        );
+    }, delay);
+}
+
+
+    // ---- Handler for input changes ----
+    function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const value = e.target.value;
+        setSearch(value);
+
+        // update URL without reload
+        const url = new URL(window.location.href);
+        if (value) url.searchParams.set("search", value);
+        else url.searchParams.delete("search");
+        window.history.pushState({}, "", url);
+
+        // schedule server search for fresh DB results (debounced)
+        scheduleServerSearch(value, 300);
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -50,10 +135,9 @@ export default function Index({ airports }) {
                     type="text"
                     placeholder="Search airports..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={handleSearchChange}
                     className="border border-gray-400 w-full max-w-xl rounded-md px-3 py-1 mr-4 focus:outline-none focus:ring focus:ring-gray-300"
-                >
-                </Input>
+                />
             </div>
 
             {/* Airports Table */}
@@ -82,7 +166,7 @@ export default function Index({ airports }) {
                         )}
 
                         {hasAirports &&
-                            filteredAirports.map(({ id, iata_code, airport_name, city, country, airport_status, timezone }) => (
+                            filteredAirports.map(({ id, iata_code, airport_name, city, country, airport_status, timezone }: any) => (
                                 <TableRow key={id}>
                                     <TableCell className="font-bold">{iata_code}</TableCell>
                                     <TableCell>{airport_name}</TableCell>
@@ -107,8 +191,12 @@ export default function Index({ airports }) {
                     </TableBody>
                 </Table>
             </div>
-
-            <Pagination links={airports.links} />
+                <div className="flex items-center justify-between mt-2 mx-4">
+                    <div className="flex items-center gap-2 text-md ">
+                        Showing total results: <p className="font-bold">{airports.total}</p> airport/s.
+                    </div>
+                    <Pagination links={airports.links} />
+                </div>
         </AppLayout>
     );
 }

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\AirlineController;
-use App\Http\Controllers\AirplaneController;
+use App\Http\Controllers\AircraftController;
 use App\Http\Controllers\AirportController;
 use App\Http\Controllers\SeatController;
 use App\Http\Controllers\TicketController;
@@ -24,7 +24,7 @@ Route::middleware(['auth', 'verified', 'prevent-back'])->group(function () {
     Route::resource('seats', SeatController::class);
     Route::resource('airports', AirportController::class);
     Route::resource('airlines', AirlineController::class);
-    Route::resource('airplanes', AirplaneController::class);
+    Route::resource('aircrafts', AircraftController::class);
     Route::resource('tickets', TicketController::class);
     Route::resource('receipts', ReceiptController::class);
 });

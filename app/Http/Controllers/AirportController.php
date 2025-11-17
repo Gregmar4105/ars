@@ -14,10 +14,26 @@ class AirportController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        
+        $search = $request->query('search');
+
+        $airports = Airport::when($search, function ($query) use ($search) {
+                $query->where('airport_name', 'like', "%{$search}%")
+                    ->orWhere('iata_code', 'like', "%{$search}%")
+                    ->orWhere('city', 'like', "%{$search}%")
+                    ->orWhere('country', 'like', "%{$search}%")
+                    ->orWhere('timezone', 'like', "%{$search}%");
+            })
+            ->paginate(10)
+            ->withQueryString(); // keep ?search= in pagination
+
         return Inertia::render('Airport/Index', [
-            'airports' => Airport::paginate(10),
+            'airports' => $airports,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 
